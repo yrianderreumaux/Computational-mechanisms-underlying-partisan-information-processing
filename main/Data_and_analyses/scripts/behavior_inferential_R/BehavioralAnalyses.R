@@ -1,47 +1,48 @@
 #this is the script to reproduce results in the manuscript entitled Computational Underpinnings of Partisan Information Processing Biases and Associations with Depth of Cognitive Reasoning 
 
-#please specify correct directory, e.g., 
-setwd("/Users/yrianderreumaux/My Drive/Submitted Manuscripts/Computational_Mech_manuscript/Data_and_analyses")
+#specify the location of this script in your path, for me it's:
+here::i_am("Data_and_analyses/scripts/behavior_inferential_R/BehavioralAnalyses.R")
 
 #Load helper functions
-source('scripts/behavior_inferential_R/helper_functions.R')
+source(here::here("Data_and_analyses", "scripts","behavior_inferential_R","helper_functions.R"))
 
 #Import and load libraries
-packages = c("tidyverse","sjstats","ggplot2","lme4","lmerTest","Hmisc","car","lmtest","ROCR", "ggeffects", "sjPlot", "lavaan", "multicon", "Rmisc")
-ipak(packages)
+library(groundhog) # we are using groundhon to make this script reproducible: https://groundhogr.com/using/
+pkgs <-  c("tidyverse","sjstats","ggplot2","lme4","lmerTest","Hmisc","car","lmtest","ROCR", "ggeffects", "sjPlot", "lavaan", "Rmisc", "here")
+groundhog.day <- '2022-05-22'
+groundhog.library(pkgs, groundhog.day)
+#please follow instructions in console if packages do not load successfully. 
 
 #load data  
 #####
-DF <- read.csv("data/cleaned/behavioral_data.csv", header=T, stringsAsFactors = FALSE, na.strings=c("","NA"))
+DF <- read.csv(here::here("Data_and_analyses","data","cleaned","behavioral_data.csv"), header=T, stringsAsFactors = FALSE, na.strings=c("","NA"))
 DF <- DF[,-c(1)] #that one extra column that always shows up
 
+#data for RT analysis (new) -- same as input for ddm models
+DF_rt <- read.csv(here::here("Data_and_analyses","data","cleaned","rt_behavioral_data_sec.csv"), header=T, stringsAsFactors = FALSE, na.strings=c("","NA"))
+
 #load DDM trace for visuals
-DF_post = read.csv("saved_hddm_models_and_parms/model_outputs/trace_processed/FullModel_trace_all.csv",header = F) 
+DF_post = read.csv(here::here("Data_and_analyses","saved_hddm_models_and_parms" ,"model_outputs","trace_processed","FullModel_trace_all.csv"),header = F) 
 colnames(DF_post) = c("a","t",
                  "z_int","v_int",
                  "v_cond","v_stim_n","v_stim_weight")
 DF_post$v_bias <- DF_post$v_int + DF_post$v_cond #difference between ingroup and outgroup drift rate
 #####
 
-
 #demographics
 #####
 m_age <- mean(DF$age, na.rm = T)
 sd_age <- sd(DF$age, na.rm = T)
 DF_agg <- DF[!duplicated(DF$Participant),]
-gender <- DF_agg %>% 
-  group_by(gender) %>% 
-  summarise(percent = 100 * n() / nrow( DF_agg ) )
-ethnicity <- DF_agg %>% 
-  group_by(ethnicity) %>% 
-  summarise(percent = 100 * n() / nrow( DF_agg ) )
+prop.table(table(DF_agg$gender))
+gender <- prop.table(table(DF_agg$gender))
+ethnicity<- prop.table(table(DF_agg$ethnicity))
 #####
 
 #center variables for evidence seen 
 #####
 DF$stim_weight  <- scale(DF$stim_weight , center=TRUE, scale=FALSE)  
 DF$stim_n  <- scale(DF$stim_n , center=TRUE, scale=FALSE)  
-
 DF$diff_in_min_out <- (DF$meanIngroup - DF$meanOutgroup) #negative values denote more evidence for outgroup
 DF$diff_in_min_out_centered  <- scale(DF$diff_in_min_out , center=TRUE, scale=FALSE)  
 DF$numDiff0 <-(DF$numIngroup - DF$numOutgroup) #negative values mean more outgroup
@@ -54,14 +55,14 @@ DF$varDiff_centered  <- scale(DF$varDiff , center=TRUE, scale=FALSE)
 ##Behavioral Analyses
 #####
 
-#Partisan Motivations Bias Information Processing
+### Partisan Motivations Bias Information Processing
 #gchoice: ingroup coded 1, outgroup coded 0
 M1 <- glmer(gChoice~numDiff_centered0+diff_in_min_out_centered+(numDiff_centered0+diff_in_min_out_centered|Participant), data = DF, family = "binomial")
 M1.coef <- summary(M1)
 M1.CI <- confint(M1)
 M1.OR <- exp(fixef(M1))
 
-#Partisans More Accurate When Ingroup is Better
+### Partisans More Accurate When Ingroup is Better
 #pre-registered analyses show similar results
 accByCond <-DF %>% group_by(whosBetter, Participant) %>% dplyr::summarize(NumIn=n(),accuracy=sum(correct)/n())
 pre_reg_Model <- t.test(accByCond$accuracy[which(accByCond$whosBetter=="ingroup")], accByCond$accuracy[which(accByCond$whosBetter=="outgroup")])
@@ -74,16 +75,29 @@ M2.CI<- confint(M2)
 M2.OR <- exp(fixef(M2))
 
 #affiliation moderation
+#polAffil2 = binary "democrat" vs. "republican" 
 M3 <- glmer(correct~as.factor(whosBetter)*as.factor(polAffil2)+(1|Participant), data = DF, family = "binomial")
 M3.coef <-summary(M3)
 M3.CI<- confint(M3)
 M3.OR <- exp(fixef(M3))
-#polAffil2 = binary "democrat" vs. "republican" 
-M3.predicted_est <- plot_model(M3, type = "pred", terms = c("whosBetter", "polAffil2")) #show predicted estimates, helps interpret the effect
+
+### Partisans Faster to Categorize Ingroup as More Honest
+M4.a <- lmer(rt_log~as.factor(response) + (1|subj_idx), DF_rt)
+M4.a.coef <-summary(M4.a) #significant main effect of response type, no effect of affiliation
+M4.a.CI<- confint(M4.a)
+#adding affiliation as covariate
+M4.b <- lmer(rt_log~as.factor(response)+as.factor(Affil) + (1|subj_idx), DF_rt)
+M4.b.coef <- summary(M4.b) #interaction term is not significant
+#adding affiliation as interaction
+M4.c <- lmer(rt_log~as.factor(response)*as.factor(Affil) + (1|subj_idx), DF_rt)
+M4.c.coef <- summary(M4.c) #interaction term is not significant
+#model comparison
+lrt_M4<- anova(M4.a,M4.b, M4.c) #non significant LRT
 #####
 
 ##Computational Results 
 #####
+
 #Starting point
 options(scipen=999)
 ci_hdi_z <- ci(DF_post$z_int, method = "HDI", ci = 0.95)
@@ -122,6 +136,12 @@ composite.fit <- cfa(composite.model, data = DFAgg)
 composite.fit<- summary(composite.fit, fit.measures = TRUE)
 
 ##Create composite score
+toZ <- c("NFC", "CRT", "ANS")
+DFAgg[toZ] <- lapply(toZ, function(x) scale(DFAgg[[x]])) #z-scoring prior to entering because each measure is on different scale
+
+DFAgg$reasoning_comp <- rowMeans(DFAgg[toZ])
+DF$reasoning_comp <- rowMeans(DFAgg[toZ])
+
 DFAgg$reasoning_comp <- composite(DFAgg[,c("NFC", "CRT", "ANS")], Zitems = T) #z-scoring prior to entering because each measure is on different scale
 DF$reasoning_comp <- composite(DF[,c("NFC", "CRT", "ANS")], Zitems = T)
 
@@ -202,6 +222,7 @@ pred.dataOut = data.frame(numDiff_centered0 = rep(seq(-3, 3, len = 149),4),
 pred.dataOut$numDiff_centered0 <- as.numeric(pred.dataOut$numDiff_centered0 )
 pred.dataOut$diff_in_min_out_centered <- as.numeric(pred.dataOut$diff_in_min_out_centered )
 gChoice_out = predict.glm(res.glmOut,pred.dataOut,type = "response")
+
 #create figure
 Figure3 <- ggplot(sub_avg, aes(color = as.factor(whosBetter))) +
   stat_summary(data = sub_avg, aes(x=diff_in_min_out_centered,y=Avg),
@@ -231,6 +252,62 @@ Figure3 <- ggplot(sub_avg, aes(color = as.factor(whosBetter))) +
         panel.grid.minor = element_blank(),
         panel.background = element_rect(colour = "black", size=1))
 
+#RT figure
+samplingDescr_Affil <- summarySEwithin(DF_rt, idvar='subj_idx', measurevar = 'rt', betweenvars = "Affil", withinvars = "response", na.rm = TRUE)
+samplingDescr_Fav  <- summarySE(DF_rt, measurevar="rt", groupvars=c("response"))
+
+#plot with SE within
+rt_fav<- ggplot(samplingDescr_Fav, aes(x = response, y = rt))+
+  geom_point(size = 4)+
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1)+
+  coord_cartesian(ylim = c(0, 3))+
+  scale_fill_manual(values=c("lightblue","red"))+
+  theme_classic() +
+  coord_cartesian(ylim = c(2,3))+
+  xlab("Response favorability") + ylab("Reaction time (seconds)")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black", size=1))+
+  theme(panel.grid.major = element_blank(), 
+        legend.position = "none",
+        legend.key.size = unit(1, "cm"),
+        legend.key.width = unit(1,"cm"), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x  = element_text(size=13,color="black"),
+        axis.text.y  = element_text(size=13,color="black"),
+        axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 15))
+#ggsave("rt_fav_2022.jpeg",  dpi = 700)
+
+rt_fav_and_affil <- ggplot(samplingDescr_Affil, aes(x = response, y = rt, fill = Affil))+
+  geom_point(size = 4)+
+  geom_bar(position=position_dodge(), stat="identity",
+           colour='black') +
+  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1)+
+  coord_cartesian(ylim = c(0, 3))+
+  facet_wrap(~Affil)+
+  scale_fill_manual(values=c("lightblue","red"))+
+  theme_classic() +
+  coord_cartesian(ylim = c(2,3))+
+  xlab("Response favorability & political affiliation") + ylab("Reaction time (seconds)")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black", size=1))+
+  theme(panel.grid.major = element_blank(), 
+        legend.position = "none",
+        legend.key.size = unit(1, "cm"),
+        legend.key.width = unit(1,"cm"), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x  = element_text(size=13,color="black"),
+        axis.text.y  = element_text(size=13,color="black"),
+        axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        strip.background = element_blank(),
+        strip.text.x = element_text(face = "bold", size = 15))
+#ggsave("rt_fav_affil_2022.jpeg",  dpi = 700)
 
 #Figure 4
 model.DIC = NULL
@@ -327,6 +404,10 @@ print("Political afiliation moderates performance based on who is better")
 print(M3.coef)
 print(M3.OR)
 
+print("Partisans Faster to Categorize Ingroup as More Honest")
+print(M4.a.coef)
+print(M4.a.CI)
+
 print("Computational Analyses")
 print("Starting point")
 print("mean")
@@ -367,4 +448,3 @@ print("Correlations between drift rate and cognitive reasoning")
 print(cor_z_res)
 print("Correlations between drift rate and starting point")
 print(cor_z__v)
-
