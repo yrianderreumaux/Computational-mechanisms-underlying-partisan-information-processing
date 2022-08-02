@@ -8,7 +8,8 @@ source(here::here("Data_and_analyses", "scripts","behavior_inferential_R","helpe
 
 #Import and load libraries
 library(groundhog) # we are using groundhon to make this script reproducible: https://groundhogr.com/using/
-pkgs <-  c("tidyverse","sjstats","ggplot2","lme4","lmerTest","Hmisc","car","lmtest","ROCR", "ggeffects", "sjPlot", "lavaan", "Rmisc", "here")
+pkgs <-  c("tidyverse","sjstats","ggplot2","lme4","lmerTest","Hmisc","car","lmtest","ROCR", 
+           "ggeffects", "sjPlot", "lavaan", "Rmisc", "here", "apaTables", "ggpubr")
 groundhog.day <- '2022-05-22'
 groundhog.library(pkgs, groundhog.day)
 #please follow instructions in console if packages do not load successfully. 
@@ -135,28 +136,20 @@ composite.model <-'reasoning=~NFC+CRT+ANS
 composite.fit <- cfa(composite.model, data = DFAgg)
 composite.fit<- summary(composite.fit, fit.measures = TRUE)
 
-##Create composite score
-toZ <- c("NFC", "CRT", "ANS")
-DFAgg[toZ] <- lapply(toZ, function(x) scale(DFAgg[[x]])) #z-scoring prior to entering because each measure is on different scale
-
-DFAgg$reasoning_comp <- rowMeans(DFAgg[toZ])
-DF$reasoning_comp <- rowMeans(DFAgg[toZ])
-
-DFAgg$reasoning_comp <- composite(DFAgg[,c("NFC", "CRT", "ANS")], Zitems = T) #z-scoring prior to entering because each measure is on different scale
-DF$reasoning_comp <- composite(DF[,c("NFC", "CRT", "ANS")], Zitems = T)
-
 #Main Effect of Cognitive Reasoning
-M4 <- glmer(correct~scale(reasoning_comp)+(1|Participant), data = DF, family = "binomial")
-M4.coef <-summary(M4)
-M4.CI<- confint(M4)
-M4.OR <- exp(fixef(M4))
-
-#Cognitive Reasoning Moderates Behavioral Task Performance
-M5 <- glmer(correct~as.numeric(affilStrength)*as.factor(whosBetter)*scale(reasoning_comp)+(1|Participant), data = DF, family = "binomial")
+M5 <- glmer(correct~scale(reasoning_comp)+(1|Participant), data = DF, family = "binomial")
 M5.coef <-summary(M5)
 M5.CI<- confint(M5)
 M5.OR <- exp(fixef(M5))
 
+#Cognitive Reasoning Moderates Behavioral Task Performance
+DF$whosBetter <- as.factor(as.character(DF$whosBetter))
+class(DF$whosBetter)
+M6 <- glmer(correct~as.numeric(affilStrength)*whosBetter*scale(reasoning_comp)+(1|Participant), data = DF, family = "binomial")
+M6.coef <- summary(M6)
+M6.CI<- confint(M6)
+M6.OR <- exp(fixef(M6))
+plot_model(M6, type = "pred", terms = c("whosBetter"))
 #all individual differences measures estimated in separate models
 #Cognitive reflection
 CRT.M <- glmer(correct~as.numeric(affilStrength)*as.factor(whosBetter)*scale(CRT)+(1|Participant), data = DF, family = "binomial")
@@ -179,7 +172,7 @@ NFC.M.OR <- exp(fixef(NFC.M))
 
 ##Cognitive Reasoning has Divergent Correlations with Drift Rate and Starting Point
 colnames(DFAgg)
-Cor_table <- apa.cor.table(DFAgg[c("NFC", "CRT", "ANS", "reasoning_comp", "V_int", "V_cond","v_bias","Z")], filename="CorTable_2022.doc", table.number=1)
+#Cor_table <- apa.cor.table(DFAgg[c("NFC", "CRT", "ANS", "reasoning_comp", "V_int", "V_cond","v_bias","Z")], filename="CorTable_2022.doc", table.number=1)
 cor_v_res <- cor.test(DFAgg$v_bias, DFAgg$reasoning_comp)
 cor_z_res <- cor.test(DFAgg$Z, DFAgg$reasoning_comp)
 cor_z__v <- cor.test(DFAgg$Z, DFAgg$v_bias)
@@ -347,8 +340,8 @@ v_bias.fig = ggplot(data = DF_post, aes(x = v_bias)) +
 Figure4 <- ggarrange(DIC.fig, z_int.fig, v_bias.fig,labels = c("A", "B","C"), nrow = 1, font.label = list(size = 16, color = "black"))
 
 #Figure 5
-M4.model <- ggpredict(M4, terms = c("affilStrength", "reasoning_comp", "whosBetter"))
-Figure5 <- ggplot(M4.model, aes(x = x, y = predicted, colour = group)) +
+M6.model <- ggpredict(M6, terms = c("affilStrength", "reasoning_comp", "whosBetter"))
+Figure5 <- ggplot(M6.model, aes(x = x, y = predicted, colour = group)) +
   geom_line() +
   geom_point()+
   facet_wrap(~facet)+
@@ -370,11 +363,11 @@ Figure5 <- ggplot(M4.model, aes(x = x, y = predicted, colour = group)) +
 
 drift_cog <- ggplot(DFAgg, aes(x = reasoning_comp, y = v_bias))+geom_point()+
   geom_smooth(method =lm, colour = "grey3")+theme_classic() 
-ggsave("drift_cog.jpeg", width = 4, height = 4, dpi = 700)
+#ggsave("drift_cog.jpeg", width = 4, height = 4, dpi = 700)
 
 z_cog <-ggplot(DFAgg, aes(x = reasoning_comp, y = Z))+geom_point()+
   geom_smooth(method =lm, colour = "grey3")+theme_classic()
-ggsave("Z_cog.jpeg", width = 4, height = 4, dpi = 700)
+#ggsave("Z_cog.jpeg", width = 4, height = 4, dpi = 700)
 
 #####
 
@@ -433,11 +426,11 @@ print(v_bias_prob)
 
 print("Individual Differences")
 print("Main Effect of Cognitive Reasoning")
-print(M4.coef)
-print(M4.OR)
-print("Cognitive Reasoning Moderates Behavioral Task Performance")
 print(M5.coef)
 print(M5.OR)
+print("Cognitive Reasoning Moderates Behavioral Task Performance")
+print(M6.coef)
+print(M6.OR)
 print(Figure5)
 
 print("Correlation Matrix")
