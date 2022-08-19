@@ -2,12 +2,12 @@
 
 ## Online preprint can be found [here](https://psyarxiv.com/g6wq9/) 
 
-### To run this project, please download and open [this](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/blob/main/main.Rproj) project
+### To run the behavioral analysis, first download and open the [R project](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/blob/main/main.Rproj) project
 
-### Behavioral analysis in R can be found [here](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/behavior_inferential_R)
+### Next, open the [Behavioral analysis](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/behavior_inferential_R) in your R environment
 
-### Computational models can be found [here](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/DDM_python)
+### [Drift diffusion models](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/DDM_python) require [hddm](https://github.com/hddm-devs/hddm), I recommend using conda to install.  
 
-### Raw & cleaned data can be found [here](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/data)
+### [Raw & cleaned data](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/data)
 
-#### Please email yderr001@ucr.edu if you have any questions or find any bugs. 
+#### If you have any questions or find any bugs, please email yderr001@ucr.edu 
