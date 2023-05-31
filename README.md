@@ -6,7 +6,7 @@
 
 ### Next, open the [Behavioral analysis](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/behavior_inferential_R) in your R environment
 
-### [Drift diffusion models](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/DDM_python) require [hddm](https://github.com/hddm-devs/hddm), I recommend using conda to install.  
+### [Drift diffusion models](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/scripts/DDM_python) require [hddm](https://github.com/hddm-devs/hddm), I recommend using [conda](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) to install.  
 
 ### [Raw & cleaned data](https://github.com/yrianderreumaux/Computational-mechanisms-underlying-partisan-information-processing/tree/main/Data_and_analyses/data)
 
