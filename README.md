@@ -1,4 +1,4 @@
-# Online supplementary material for paper entitled: Computational mechanisms underlying partisan information processing biases and associations with depth of cognitive reasoning
+## Online supplementary material for paper entitled: Computational mechanisms underlying partisan information processing biases and associations with depth of cognitive reasoning
 
 ## Online preprint can be found [here](https://psyarxiv.com/g6wq9/) 
 
