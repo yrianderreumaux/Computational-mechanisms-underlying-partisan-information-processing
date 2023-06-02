@@ -42,14 +42,20 @@ ethnicity<- prop.table(table(DF_agg$ethnicity))
 
 #center variables for evidence seen 
 #####
-DF$stim_weight  <- scale(DF$stim_weight , center=TRUE, scale=FALSE)  
-DF$stim_n  <- scale(DF$stim_n , center=TRUE, scale=FALSE)  
-DF$diff_in_min_out <- (DF$meanIngroup - DF$meanOutgroup) #negative values denote more evidence for outgroup
-DF$diff_in_min_out_centered  <- scale(DF$diff_in_min_out , center=TRUE, scale=FALSE)  
-DF$numDiff0 <-(DF$numIngroup - DF$numOutgroup) #negative values mean more outgroup
-DF$numDiff_centered0  <- scale(DF$numDiff0 , center=TRUE, scale=FALSE) 
-DF$varDiff <-(DF$SDIngroup - DF$SDOutgroup) 
-DF$varDiff_centered  <- scale(DF$varDiff , center=TRUE, scale=FALSE) 
+# Function to center variables
+center_variable <- function(variable) {
+  scale(variable, center = TRUE, scale = FALSE)
+}
+
+# Center variables for evidence seen
+DF$stim_weight <- center_variable(DF$stim_weight)
+DF$stim_n <- center_variable(DF$stim_n)
+DF$diff_in_min_out <- DF$meanIngroup - DF$meanOutgroup
+DF$diff_in_min_out_centered <- center_variable(DF$diff_in_min_out)
+DF$numDiff0 <- DF$numIngroup - DF$numOutgroup
+DF$numDiff_centered0 <- center_variable(DF$numDiff0)
+DF$varDiff <- DF$SDIngroup - DF$SDOutgroup
+DF$varDiff_centered <- center_variable(DF$varDiff)
 #####
 
 
